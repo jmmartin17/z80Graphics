@@ -1,0 +1,504 @@
+
+instantmap:	;hl=map, ix=tile, bc=offset a=width in tiles of entire map
+;Instantly return to an unaligned position in the map
+;THIS ROUTINE IS SLOW, DO NOT USE IT EVERY SINGLE FRAME
+	push af
+	push bc
+	push hl
+	call alignedmap
+	pop hl
+	pop bc
+	pop af
+	push af
+	ld a,c
+	and 7
+	jr z,+_
+	res 0,c
+	res 1,c
+	res 2,c
+	ld e,a
+	pop af
+instantloop:
+	push de
+	inc c
+	push af
+	push hl
+	push bc
+	push ix
+	call shiftleft
+	pop ix
+	pop bc
+	pop hl
+	pop af
+	pop de
+	dec e
+	jr nz,instantloop
+	ret
+_:
+	pop af
+	ret
+
+alignedmap:
+;destroys: af', bc, bc', de, de', hl, hl'
+	srl b
+	rr c
+	srl b
+	rr c
+	srl b
+	rr c
+	add hl,bc
+	ld c,12
+	di
+	ex af,af'
+	exx
+	ld de,plotsscreen
+	ld b,0
+
+	exx
+
+	ld d,0
+tilemaploop:
+	ld b,8
+
+_:
+	push ix
+	ld a,(hl)
+	add a,a
+
+	exx
+
+	pop hl
+	ld c,a
+	add hl,bc
+	add hl,bc
+	add hl,bc
+	add hl,bc
+	ld bc,8*256+255
+
+_:
+	ldi
+	inc de
+	inc de
+	inc de
+	inc de
+	inc de
+	inc de
+	inc de
+	inc de
+	inc de
+	inc de
+	inc de
+	djnz -_
+
+	exx
+
+	ex af,af'
+
+	ld e,a
+	add hl,de
+
+	ex af,af'
+
+	djnz --_
+
+	exx
+
+	push de
+
+	exx
+
+	ld de,-(768-1)
+	pop iy
+	add iy,de
+	push iy
+
+	exx
+
+	pop de
+
+	exx
+
+	ex af,af'
+
+	push af
+
+	ex af,af'
+
+	pop af
+	add a,a	
+	ld d,0
+	ld e,a
+	sbc hl,de
+	sbc hl,de
+	sbc hl,de
+	sbc hl,de
+	inc hl
+	dec c
+	jr nz,tilemaploop
+
+	ld iy,flags
+
+	ex af,af'
+
+	ei
+	ret
+
+shiftright:
+;bc=NEW x-coord in pixels (cannot be multiple of 8), hl=start of tilemap, 
+;ix=start of tileset, a=width in tiles of map
+	di
+	ex af,af'
+	ld a,c
+	and 7
+	srl b
+	rr c
+	srl b
+	rr c
+	srl b
+	rr c
+	add hl,bc
+	exx
+	ld c,a
+	ld hl,plotsscreen
+	exx
+	ld b,8
+shiftrightloop:
+	ld a,(hl)
+	add a,a
+	ld e,a
+	ld d,0
+	push ix
+	add ix,de
+	add ix,de
+	add ix,de
+	add ix,de
+	exx
+	ld b,8
+_:
+	ld a,(ix+0)
+	push bc
+	ld b,c
+	inc b
+	push af
+_:
+	pop af
+	sla a
+	push af
+	djnz -_
+	pop af
+	pop bc
+	rr (hl)
+	inc hl
+	rr (hl)
+	inc hl
+	rr (hl)
+	inc hl
+	rr (hl)
+	inc hl
+	rr (hl)
+	inc hl
+	rr (hl)
+	inc hl
+	rr (hl)
+	inc hl
+	rr (hl)
+	inc hl
+	rr (hl)
+	inc hl
+	rr (hl)
+	inc hl
+	rr (hl)
+	inc hl
+	rr (hl)
+	inc hl
+	inc ix
+	djnz --_
+	pop ix
+	exx
+	ex af,af'
+	push bc
+	ld b,0
+	ld c,a
+	ex af,af'
+	add hl,bc
+	pop bc
+	djnz shiftrightloop
+	ei
+	ret
+
+shiftleft:
+;bc=NEW x-coord in pixels (cannot be multiple of 8), hl=start of tilemap, 
+;ix=start of tileset, a=width in tiles of map
+	di
+	ex af,af'
+	ld a,c
+	and 7
+	jr nz,+_
+	ld a,8
+	dec hl
+_:
+	srl b
+	rr c
+	srl b
+	rr c
+	srl b
+	rr c
+	add hl,bc
+	exx
+	ld c,a
+	ld hl,plotsscreen+767
+	exx
+	ex af,af'
+	push af
+	ld c,a
+	ld b,0
+	add hl,bc
+	add hl,bc
+	add hl,bc
+	add hl,bc
+	add hl,bc
+	add hl,bc
+	add hl,bc
+	ld c,12
+	add hl,bc
+	pop af
+	ex af,af'
+	ld b,8
+shiftleftloop:
+	ld a,(hl)
+	add a,a
+	
+	ld e,a
+	ld d,0
+	push ix
+	add ix,de
+	add ix,de
+	add ix,de
+	add ix,de
+	ld e,7
+	add ix,de
+	exx
+	ld b,8
+_:
+	ld a,(ix+0)
+	push bc
+	ld b,c
+	push af
+_:
+	pop af
+	sla a
+	push af
+	djnz -_
+	pop af
+	pop bc
+	rl (hl)
+	dec hl
+	rl (hl)
+	dec hl
+	rl (hl)
+	dec hl
+	rl (hl)
+	dec hl
+	rl (hl)
+	dec hl
+	rl (hl)
+	dec hl
+	rl (hl)
+	dec hl
+	rl (hl)
+	dec hl
+	rl (hl)
+	dec hl
+	rl (hl)
+	dec hl
+	rl (hl)
+	dec hl
+	rl (hl)
+	dec hl
+	dec ix
+	djnz --_
+	pop ix
+	exx
+	ex af,af'
+	push bc
+	ld b,0
+	ld c,a
+	ex af,af'
+	or a
+	sbc hl,bc
+	pop bc
+	djnz shiftleftloop
+	ei
+	ret
+
+fastcopy:
+    di
+    ld  a,$80
+    out ($10),a
+    ld  hl,plotsscreen-12-(-(12*64)+1)
+    ld  a,$20
+    ld  c,a
+    inc hl
+    dec hl
+fastCopyAgain:
+    ld  b,64
+    inc c
+    ld  de,-(12*64)+1
+    out ($10),a
+    add hl,de
+    ld  de,10
+fastCopyLoop:
+    add hl,de
+    inc hl
+    inc hl
+    inc de
+    ld  a,(hl)
+    out ($11),a
+    dec de
+    djnz    fastCopyLoop
+    ld  a,c
+    cp  $2B+1
+    jr  nz,fastCopyAgain
+    ret
+
+masked_sprite_fast:	
+;ix=sprite data, a=xc, e=yc
+;For speed reasons, this routine uses 128-byte entries
+;of 8x8 sprites, eliminating costly shifting,
+;but at great memory cost
+;Sprite data must be organized as follows:
+
+;Sprite_0:
+;Mask_0:
+;Sprite_1:
+;Mask_1:
+;And so on up to 7
+
+	ld d,0
+	ld h,d
+	ld l,e
+	add hl,de
+	add hl,de
+	add hl,hl
+	add hl,hl
+	ld e,a
+	srl e
+	srl e
+	srl e
+	add hl,de
+	and 7
+	add a,a
+	add a,a
+	add a,a
+	add a,a
+	add a,a
+	ld e,a
+	add ix,de
+	ld de,plotsscreen
+	add hl,de
+	ld de,11
+	ld b,8
+_:
+	ld a,(hl)
+	and (ix+16)
+	or (ix+0)
+	ld (hl),a
+	inc hl
+	ld a,(hl)
+	and (ix+17)
+	or (ix+1)
+	ld (hl),a
+	add hl,de
+	inc ix
+	inc ix
+	djnz -_
+	ret
+
+splash_left:
+	ld hl,splasha+11
+	call +_
+	call dither
+	ei
+	ld hl,splashb+11
+_:
+	ld b,64
+_:
+	sla (hl)
+	dec hl
+	rl (hl)
+	dec hl
+	rl (hl)
+	dec hl
+	rl (hl)
+	dec hl
+	rl (hl)
+	dec hl
+	rl (hl)
+	dec hl
+	rl (hl)
+	dec hl
+	rl (hl)
+	dec hl
+	rl (hl)
+	dec hl
+	rl (hl)
+	dec hl
+	rl (hl)
+	dec hl
+	rl (hl)
+	push af
+	ld de,11
+	add hl,de
+	ld c,(hl)
+	srl c
+	pop af
+	rl c
+	ld (hl),c
+	ld de,12
+	add hl,de
+	djnz -_
+	ret
+
+splash_right:
+	ld hl,splasha
+	call +_
+	call dither
+	ei
+	ld hl,splashb
+	ld b,64
+_:
+	srl (hl)
+	inc hl
+	rr (hl)
+	inc hl
+	rr (hl)
+	inc hl
+	rr (hl)
+	inc hl
+	rr (hl)
+	inc hl
+	rr (hl)
+	inc hl
+	rr (hl)
+	inc hl
+	rr (hl)
+	inc hl
+	rr (hl)
+	inc hl
+	rr (hl)
+	inc hl
+	rr (hl)
+	inc hl
+	rr (hl)
+	push af
+	ld de,-11
+	add hl,de
+	ld c,(hl)
+	sla c
+	pop af
+	rr c
+	ld (hl),c
+	ld de,12
+	add hl,de
+	djnz -_
+	ret
