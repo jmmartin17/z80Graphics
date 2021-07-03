@@ -331,6 +331,8 @@ _:
 	ei
 	ret
 
+; adapted from ionfastcopy of the Ion shell/library:
+; https://www.ticalc.org/archives/files/fileinfo/130/13058.html
 fastcopy:
     di
     ld  a,$80
